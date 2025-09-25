@@ -1,0 +1,14 @@
+{
+  "account_1" : {
+    "Username": "Acc1",
+        "Password": "838429f261a3a2f6b85dd5ff275f26495ca7cea7d98853f4302b069f2d534777",
+        "Email": "exampleofmail@fake.com",
+        "Phone": 1111111111
+  },
+  "account_2" : {
+    "Username": "xyz",
+        "Password": "a67591d3dd09ab27d66c61ee4457fda15027d46400c5b9486709f68821fc24f4",
+        "Email": "doesnotexist@fake.com",
+        "Phone": 9999999999
+  }
+}
