@@ -1,0 +1,14 @@
+{
+    "total_keys": 10,
+    "min_keys": 5,
+    "log_location": "enc/log/",
+    "enc_file_location": "enc/ops/",
+    "log_key_count": true,
+    "log_min_required_keys": true,
+    "log_enc_file_hash": true,
+    "log_operation_time": true,
+    "log_key_location": true,
+    "font_size": 12,
+    "btn_size": 12,
+    "theme": "Dark"
+}
