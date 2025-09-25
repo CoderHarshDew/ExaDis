@@ -1,0 +1,112 @@
+/* ---------- Global Styles ---------- */
+QWidget {
+    background-color: #ffffff;
+    color: #202020;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12pt;
+}
+
+/* ---------- Labels ---------- */
+QLabel {
+    color: #202020;
+}
+
+/* ---------- Buttons ---------- */
+QPushButton {
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #202020;
+}
+QPushButton:hover {
+    background-color: #e6e6e6;
+    border: 1px solid #0078d7;
+}
+QPushButton:pressed {
+    background-color: #dcdcdc;
+    border: 1px solid #0078d7;
+}
+
+/* ---------- Text Inputs ---------- */
+QLineEdit, QTextEdit, QSpinBox, QComboBox {
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 4px;
+    color: #202020;
+    selection-background-color: #0078d7;
+    selection-color: #ffffff;
+}
+
+QLineEdit:hover, QTextEdit:hover, QSpinBox:hover, QComboBox:hover {
+    background-color: #ffffff;
+    border: 1px solid #0078d7;
+    border-radius: 4px;
+    padding: 4px;
+    color: #202020;
+    selection-background-color: #0078d7;
+    selection-color: #ffffff;
+}
+
+/* ---------- Scroll Area ---------- */
+QScrollArea {
+    background-color: #ffffff;
+    border: none;
+}
+
+/* ---------- Tabs ---------- */
+QTabWidget::pane {
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+}
+
+/* Expand tabs equally */
+QTabBar {
+    qproperty-expanding: 1;
+}
+
+QTabBar::tab {
+    background-color: #f0f0f0;
+    color: #202020;
+    padding: 8px 16px;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    min-height: 32px;
+    text-align: center;
+}
+
+QTabBar::tab:selected {
+    background-color: #e6e6e6;
+    border-bottom: 2px solid #0078d7;
+}
+
+QTabBar::tab:hover {
+    background-color: #eaeaea;
+}
+
+/* ---------- Checkboxes ---------- */
+QCheckBox {
+    spacing: 6px;
+    color: #202020;
+}
+
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+}
+
+/* Unchecked box */
+QCheckBox::indicator:unchecked {
+    border: 1px solid #888;
+    border-radius: 3px;
+    background: #ffffff;
+}
+
+/* Checked box with checkmark */
+QCheckBox::indicator:checked {
+    border: 1px solid #0078d7;
+    border-radius: 3px;
+    background: #0078d7;
+    image: url(assets/images/check_dark.png); /* same checkmark */
+}
