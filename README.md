@@ -101,8 +101,3 @@ python dec_app_frontend.py
 python server_system_frontend.py
 
 ```
-
----
-
-# FAQs
-
