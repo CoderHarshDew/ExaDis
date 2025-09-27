@@ -94,21 +94,3 @@ def start_decryption(enc_file_content: bytes, file_path: str, file_metadata: dic
 
 if __name__ == "__main__":
     pass
-
-"""
-here are date to help you out:
-this program will decrypt a file. The key for decryption is split into "min_keys" parts, as you might've guessed, 
-the encrypted files have a file_metadata in them which is dictionary of data, contains the min_keys, as you've 
-already inferred the frontend of this code is to call the start_decryption function, and we will provide the 
-encrypted file's contents in bytes, the file_metadata, and file_path of the encrypted file to this function when we
-call it. Using time_stamped directories will ensure two files never shares the same directory even if they have the 
-same name. Oh and ignore the __name__ == "__main__" part, that's for debugging, you might've noticed some functions
-that are never used, they serve the same purpose, they were used when I made the first draft for the code, now for 
-the next one I'll need the frontend. So make me a frontend that does all of this, also you might be wondering why 
-there is a need for min_keys, this is to be provided to frontend so that the frontend can ask for the minimum required
-keys from the user, you will have to make a frontend such that it accepts min_key amount of keys from user (drag &
-drop or click to upload) and if it receives less it tell user that the keys are insufficient for reconstruction. Oh
-and you might've noticed the GlobalData.status, it is for if an exception occurs I can send it to frontend for the 
-relevant field.
-
-"""
