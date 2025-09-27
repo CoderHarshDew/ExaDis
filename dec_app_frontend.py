@@ -437,7 +437,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Decryption System")
         self.resize(900, 650)
-        self.setWindowIcon(QIcon("assets/images/dec_app_frontend.ico"))
+        self.setWindowIcon(QIcon("assets/images/dec_app_frontend.png"))
         layout = QVBoxLayout()
         self.tabs = QTabWidget()
         self.tabs.tabBar().setExpanding(True)
@@ -462,4 +462,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
