@@ -13,7 +13,7 @@ This is a prototype version, and does not have complete functionality just yet.
 
 # Table Of Contents
 
-1. [Introduction.](#exadis:-blockchain-integrated-exam-paper-distribution-system)
+1. [Introduction.](#blockchain-integrated-exam-paper-distribution-system)
 2. [Table of contents.](#table-of-contents)
 3. [Features.](#features)
 4. [Installation.](#installation)
