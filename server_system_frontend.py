@@ -24,7 +24,7 @@ from uti import get_filename_from_filepath, strip_extension
 BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "server_system" / "config.json"
 THEME_PATH = BASE_DIR / "assets" / "themes"
-ICON_PATH = BASE_DIR / "assets" / "images" / "server.ico"
+ICON_PATH = BASE_DIR / "assets" / "images" / "server.png"
 
 # -------------------- Utilities --------------------
 def load_config():
@@ -701,3 +701,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
