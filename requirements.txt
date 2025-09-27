@@ -1,0 +1,4 @@
+cryptography>=41.0.0
+shamir-mnemonic>=0.3.2
+beartype>=0.18.5
+PyQt5>=5.15.10
