@@ -1,4 +1,3 @@
-# server_system_frontend.py
 import sys
 import os
 import json
@@ -16,7 +15,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 
-# backend and utils (adjust import name if different)
+# backend and utils 
 import server_system_backend as backend
 from uti import get_filename_from_filepath, strip_extension
 
@@ -570,7 +569,6 @@ class SettingsTab(QWidget):
         phone_no = int(phone) if phone else 0
 
         try:
-            # backend.update_acc_details(username, ps_prev, acc_id, ps_new, email, phone_no)
             backend.update_acc_details(new_username, old_pw, self.current_user, new_pw, email, phone_no)
             QMessageBox.information(self, "Account", "Account details updated")
         except Exception as e:
@@ -611,8 +609,7 @@ class MainWindow(QWidget):
 
         self.setWindowTitle("Server - Uploader")
         self.resize(960, 700)
-
-        # Set global app icon if available (handled also in run_once)
+        
         try:
             if ICON_PATH.exists():
                 self.setWindowIcon(QIcon(str(ICON_PATH)))
@@ -701,4 +698,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
