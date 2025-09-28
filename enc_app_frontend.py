@@ -10,9 +10,10 @@ import enc_app_backend
 from uti import get_filename_from_filepath, strip_extension
 
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel, QPushButton,
+    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton,
     QTextEdit, QFileDialog, QHBoxLayout, QComboBox, QCheckBox,
-    QSpinBox, QLineEdit, QMessageBox, QFormLayout, QScrollArea, QGridLayout
+    QSpinBox, QLineEdit, QMessageBox, QFormLayout, QScrollArea, QGridLayout,
+    QStackedWidget
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
@@ -247,15 +248,31 @@ class SettingsTab(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
-        self.subtabs = QTabWidget()
 
-        # Make subtabs expand equally across the width
-        self.subtabs.tabBar().setExpanding(True)
+        # -- Subtab button row (equal-width inside settings) --
+        subbtn_row = QHBoxLayout()
+        subbtn_row.setSpacing(0)
+        subbtn_row.setContentsMargins(0, 0, 0, 0)
+        self.sub_enc_btn = QPushButton("Encryption Options")
+        self.sub_log_btn = QPushButton("Logging")
+        self.sub_app_btn = QPushButton("Appearance")
 
-        self.subtabs.addTab(self.make_encryption_settings(), "Encryption Options")
-        self.subtabs.addTab(self.make_logging_settings(), "Logging")
-        self.subtabs.addTab(self.make_appearance_settings(), "Appearance")
-        layout.addWidget(self.subtabs)
+        for b in (self.sub_enc_btn, self.sub_log_btn, self.sub_app_btn):
+            subbtn_row.addWidget(b, 1)  # equal width inside settings
+
+        layout.addLayout(subbtn_row)
+
+        # -- Subtab stack (shows content for each sub-button) --
+        self.substack = QStackedWidget()
+        self.sub_enc_widget = self.make_encryption_settings()
+        self.sub_log_widget = self.make_logging_settings()
+        self.sub_app_widget = self.make_appearance_settings()
+
+        self.substack.addWidget(self.sub_enc_widget)  # 0
+        self.substack.addWidget(self.sub_log_widget)  # 1
+        self.substack.addWidget(self.sub_app_widget)  # 2
+
+        layout.addWidget(self.substack)
 
         # Save / Apply button
         self.save_btn = QPushButton("Save")
@@ -263,6 +280,16 @@ class SettingsTab(QWidget):
         layout.addWidget(self.save_btn)
 
         self.setLayout(layout)
+
+        # Connect subtab buttons
+        self.sub_enc_btn.clicked.connect(lambda: self.substack.setCurrentIndex(0))
+        self.sub_log_btn.clicked.connect(lambda: self.substack.setCurrentIndex(1))
+        self.sub_app_btn.clicked.connect(lambda: self.substack.setCurrentIndex(2))
+
+        # Default subtab
+        self.substack.setCurrentIndex(0)
+
+        # Load settings after widgets exist
         self.load_settings()
 
     # Encryption settings
@@ -343,26 +370,31 @@ class SettingsTab(QWidget):
 
     def load_settings(self):
         cfg = load_config()
-        self.total_keys_spin.setValue(cfg.get("total_keys", 10))
-        self.min_keys_spin.setValue(cfg.get("min_keys", 5))
-        self.log_path_edit.setText(cfg.get("log_location", "enc/log/"))
-        self.key_path_edit.setText(cfg.get("enc_file_location", "enc/ops/enc_files/"))
-        self.chk_log_key_count.setChecked(cfg.get("log_key_count", True))
-        self.chk_log_min_keys.setChecked(cfg.get("log_min_required_keys", True))
-        self.chk_log_hash.setChecked(cfg.get("log_enc_file_hash", True))
-        self.chk_log_time.setChecked(cfg.get("log_operation_time", True))
-        self.chk_log_key_loc.setChecked(cfg.get("log_key_location", True))
+        # Only apply if widgets exist (they do after make_* called in __init__)
+        try:
+            self.total_keys_spin.setValue(cfg.get("total_keys", 10))
+            self.min_keys_spin.setValue(cfg.get("min_keys", 5))
+            self.log_path_edit.setText(cfg.get("log_location", "enc/log/"))
+            self.key_path_edit.setText(cfg.get("enc_file_location", "enc/ops/enc_files/"))
+            self.chk_log_key_count.setChecked(cfg.get("log_key_count", True))
+            self.chk_log_min_keys.setChecked(cfg.get("log_min_required_keys", True))
+            self.chk_log_hash.setChecked(cfg.get("log_enc_file_hash", True))
+            self.chk_log_time.setChecked(cfg.get("log_operation_time", True))
+            self.chk_log_key_loc.setChecked(cfg.get("log_key_location", True))
 
-        # Appearance
-        self.font_spin.setValue(cfg.get("font_size", 12))
-        self.btn_size_spin.setValue(cfg.get("btn_size", 12))
-        theme = cfg.get("theme", "System Default")
-        idx = self.theme_combo.findText(theme)
-        if idx >= 0:
-            self.theme_combo.setCurrentIndex(idx)
+            # Appearance
+            self.font_spin.setValue(cfg.get("font_size", 12))
+            self.btn_size_spin.setValue(cfg.get("btn_size", 12))
+            theme = cfg.get("theme", "System Default")
+            idx = self.theme_combo.findText(theme)
+            if idx >= 0:
+                self.theme_combo.setCurrentIndex(idx)
 
-        # Apply immediately
-        self.apply_appearance()
+            # Apply immediately
+            self.apply_appearance()
+        except Exception:
+            # If any widget isn't ready, ignore (shouldn't happen here)
+            pass
 
     def get_current_config(self):
         return {
@@ -401,17 +433,43 @@ class MainWindow(QWidget):
         self.setWindowTitle("Encryption System")
         self.resize(900, 650)
         self.setWindowIcon(QIcon("assets/images/enc_app_frontend.png"))
-        layout = QVBoxLayout()
-        self.tabs = QTabWidget()
 
-        # Make main tabs expand equally across the width
-        self.tabs.tabBar().setExpanding(True)
+        main_layout = QVBoxLayout()
 
-        self.tabs.addTab(EncryptionTab(), "Encryption")
-        self.tabs.addTab(LogTab(), "Log")
-        self.tabs.addTab(SettingsTab(), "Settings")
-        layout.addWidget(self.tabs)
-        self.setLayout(layout)
+        # ---- Top row with 3 main equal-width buttons ----
+        top_btn_row = QHBoxLayout()
+        top_btn_row.setSpacing(0)
+        top_btn_row.setContentsMargins(0, 0, 0, 0)
+
+        self.btn_encryption = QPushButton("Encryption")
+        self.btn_log = QPushButton("Log")
+        self.btn_settings = QPushButton("Settings")
+
+        for b in (self.btn_encryption, self.btn_log, self.btn_settings):
+            top_btn_row.addWidget(b, 1)  # equal width across main window
+
+        main_layout.addLayout(top_btn_row)
+
+        # ---- Main stacked area (switch between main pages) ----
+        self.stack = QStackedWidget()
+        self.page_encryption = EncryptionTab()
+        self.page_log = LogTab()
+        self.page_settings = SettingsTab()
+
+        self.stack.addWidget(self.page_encryption)  # index 0
+        self.stack.addWidget(self.page_log)         # index 1
+        self.stack.addWidget(self.page_settings)    # index 2
+
+        main_layout.addWidget(self.stack)
+        self.setLayout(main_layout)
+
+        # Connect main buttons
+        self.btn_encryption.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        self.btn_log.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        self.btn_settings.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+
+        # default show encryption
+        self.stack.setCurrentIndex(0)
 
 # ---------- Run ----------
 def main():
@@ -427,5 +485,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

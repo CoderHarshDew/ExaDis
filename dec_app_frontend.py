@@ -11,9 +11,10 @@ from uti import get_filename_from_filepath, strip_extension
 import uti
 
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel, QPushButton,
-    QTextEdit, QFileDialog, QHBoxLayout, QComboBox, QCheckBox,
-    QSpinBox, QLineEdit, QMessageBox, QFormLayout, QScrollArea, QGridLayout, QInputDialog
+    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton,
+    QTextEdit, QFileDialog, QHBoxLayout, QComboBox,
+    QSpinBox, QLineEdit, QMessageBox, QFormLayout, QScrollArea, QGridLayout,
+    QInputDialog, QStackedWidget
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
@@ -346,19 +347,36 @@ class SettingsTab(QWidget):
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
-        self.subtabs = QTabWidget()
-        self.subtabs.tabBar().setExpanding(True)
 
-        self.subtabs.addTab(self.make_logging_settings(), "Logging")
-        self.subtabs.addTab(self.make_appearance_settings(), "Appearance")
-        layout.addWidget(self.subtabs)
+        # Create two equal-width buttons for the Settings subpages
+        self.settings_btn_row = QHBoxLayout()
+        self.btn_logging = QPushButton("Logging")
+        self.btn_appearance = QPushButton("Appearance")
 
+        # Make them expand equally
+        self.settings_btn_row.addWidget(self.btn_logging, 1)
+        self.settings_btn_row.addWidget(self.btn_appearance, 1)
+
+        layout.addLayout(self.settings_btn_row)
+
+        # Create a stacked widget for the settings pages
+        self.substack = QStackedWidget()
+        self.substack.addWidget(self.make_logging_settings())       # index 0
+        self.substack.addWidget(self.make_appearance_settings())    # index 1
+
+        layout.addWidget(self.substack)
+
+        # Save button at the bottom
         self.save_btn = QPushButton("Save")
         self.save_btn.clicked.connect(self.save_and_apply)
         layout.addWidget(self.save_btn)
 
         self.setLayout(layout)
         self.load_settings()
+
+        # Wire up navigation
+        self.btn_logging.clicked.connect(lambda: self.substack.setCurrentIndex(0))
+        self.btn_appearance.clicked.connect(lambda: self.substack.setCurrentIndex(1))
 
     def make_logging_settings(self):
         box = QWidget()
@@ -399,13 +417,17 @@ class SettingsTab(QWidget):
 
     def load_settings(self):
         cfg = load_config()
-        self.log_path_edit.setText(cfg.get("log_location", "dec/log/"))
-        self.font_spin.setValue(cfg.get("font_size", 12))
-        self.btn_size_spin.setValue(cfg.get("btn_size", 12))
-        theme = cfg.get("theme", "System Default")
-        idx = self.theme_combo.findText(theme)
-        if idx >= 0:
-            self.theme_combo.setCurrentIndex(idx)
+        # ensure attributes exist before setting
+        try:
+            self.log_path_edit.setText(cfg.get("log_location", "dec/log/"))
+            self.font_spin.setValue(cfg.get("font_size", 12))
+            self.btn_size_spin.setValue(cfg.get("btn_size", 12))
+            theme = cfg.get("theme", "System Default")
+            idx = self.theme_combo.findText(theme)
+            if idx >= 0:
+                self.theme_combo.setCurrentIndex(idx)
+        except Exception:
+            pass
         self.apply_appearance()
 
     def get_current_config(self):
@@ -438,14 +460,40 @@ class MainWindow(QWidget):
         self.resize(900, 650)
         self.setWindowIcon(QIcon("assets/images/dec_app_frontend.png"))
         layout = QVBoxLayout()
-        self.tabs = QTabWidget()
-        self.tabs.tabBar().setExpanding(True)
 
-        self.tabs.addTab(DecryptionTab(), "Decryption")
-        self.tabs.addTab(LogTab(), "Log")
-        self.tabs.addTab(SettingsTab(), "Settings")
-        layout.addWidget(self.tabs)
+        # Top row of three equal-width buttons replacing the QTabWidget tabs
+        self.top_btn_row = QHBoxLayout()
+        self.btn_decryption = QPushButton("Decryption")
+        self.btn_log = QPushButton("Log")
+        self.btn_settings = QPushButton("Settings")
+
+        # ensure equal expansion
+        self.top_btn_row.addWidget(self.btn_decryption, 1)
+        self.top_btn_row.addWidget(self.btn_log, 1)
+        self.top_btn_row.addWidget(self.btn_settings, 1)
+
+        layout.addLayout(self.top_btn_row)
+
+        # Use QStackedWidget to hold the three main pages
+        self.stack = QStackedWidget()
+        self.page_decryption = DecryptionTab()
+        self.page_log = LogTab()
+        self.page_settings = SettingsTab()
+
+        self.stack.addWidget(self.page_decryption)  # index 0
+        self.stack.addWidget(self.page_log)         # index 1
+        self.stack.addWidget(self.page_settings)    # index 2
+
+        layout.addWidget(self.stack)
         self.setLayout(layout)
+
+        # Connect top buttons to switch pages
+        self.btn_decryption.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        self.btn_log.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        self.btn_settings.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+
+        # start with Decryption visible
+        self.stack.setCurrentIndex(0)
 
 # ---------- Run ----------
 def main():
@@ -461,6 +509,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

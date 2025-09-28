@@ -1,21 +1,19 @@
 import sys
 import os
 import json
-import re
 import platform
 import subprocess
 from pathlib import Path
 from typing import Optional
 
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QTabWidget, QVBoxLayout, QLabel, QPushButton,
+    QApplication, QWidget, QVBoxLayout, QLabel, QPushButton,
     QFileDialog, QHBoxLayout, QLineEdit, QMessageBox, QFormLayout,
-    QScrollArea, QGridLayout, QDialog, QStackedLayout, QTextEdit, QComboBox
+    QScrollArea, QGridLayout, QDialog, QStackedLayout, QTextEdit, QComboBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 
-# backend and utils 
 import server_system_backend as backend
 from uti import get_filename_from_filepath, strip_extension
 
@@ -24,6 +22,17 @@ BASE_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = BASE_DIR / "server_system" / "config.json"
 THEME_PATH = BASE_DIR / "assets" / "themes"
 ICON_PATH = BASE_DIR / "assets" / "images" / "server.png"
+
+# Tab name constants (explicitly define main vs sub tabs)
+TAB_UPLOAD = "Upload"
+TAB_FILES = "Files"
+TAB_REQUESTS = "Requests"
+TAB_SETTINGS = "Settings"
+TAB_SERVER_STATUS = "Server Status"
+
+SUBTAB_APPEARANCE = "Appearance"
+SUBTAB_ACCOUNT = "Account Settings"
+
 
 # -------------------- Utilities --------------------
 def load_config():
@@ -361,6 +370,7 @@ class FilesTab(QWidget):
         for i, (label, file_dir) in enumerate(entries):
             btn = QPushButton(label)
             btn.setMinimumHeight(36)
+            # ensure closure binds current file_dir
             btn.clicked.connect(lambda checked, d=file_dir: self.open_file_details(d))
             row, col = divmod(i, 2)
             self.grid_layout.addWidget(btn, row, col)
@@ -472,6 +482,7 @@ class RequestsTab(QWidget):
                         lbl = QLabel(f"{fname}: {json.dumps(rj)}")
                         approve_btn = QPushButton("Approve")
                         deny_btn = QPushButton("Deny")
+                        # bind file_dir into lambda to avoid late-binding
                         approve_btn.clicked.connect(lambda checked, d=str(sub)+os.sep: self.update_status(d, True))
                         deny_btn.clicked.connect(lambda checked, d=str(sub)+os.sep: self.update_status(d, False))
                         self.grid.addWidget(lbl, row, 0)
@@ -491,19 +502,45 @@ class RequestsTab(QWidget):
             QMessageBox.critical(self, "Error", f"Could not update: {e}")
 
 
-# -------------------- Settings Tab --------------------
+# -------------------- Settings Tab (with sub-buttons) --------------------
 class SettingsTab(QWidget):
+
     def __init__(self, current_user, parent_window):
         super().__init__()
         self.current_user = current_user
         self.parent_window = parent_window  # MainWindow instance
 
         layout = QVBoxLayout()
-        self.subtabs = QTabWidget()
-        self.subtabs.addTab(self._make_appearance_tab(), "Appearance")
-        self.subtabs.addTab(self._make_account_tab(), "Account Settings")
-        layout.addWidget(self.subtabs)
+
+        # --- sub navigation buttons ---
+        nav_layout = QHBoxLayout()
+        self.appearance_btn = QPushButton(SUBTAB_APPEARANCE)
+        self.account_btn = QPushButton(SUBTAB_ACCOUNT)
+
+        for btn in (self.appearance_btn, self.account_btn):
+            btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            nav_layout.addWidget(btn)
+
+        layout.addLayout(nav_layout)
+
+        # --- stacked subtabs ---
+        self.stack = QStackedLayout()
+        self.appearance_tab = self._make_appearance_tab()
+        self.account_tab = self._make_account_tab()
+
+        self.stack.addWidget(self.appearance_tab)  # index 0
+        self.stack.addWidget(self.account_tab)     # index 1
+
+        # put stacked layout into a container widget and add to layout
+        stack_container = QWidget()
+        stack_container.setLayout(self.stack)
+        layout.addWidget(stack_container)
+
         self.setLayout(layout)
+
+        # connect sub-buttons
+        self.appearance_btn.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        self.account_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
 
     def _make_appearance_tab(self):
         w = QWidget()
@@ -513,6 +550,17 @@ class SettingsTab(QWidget):
         row.addWidget(QLabel("Select Theme:"))
         self.theme_combo = QComboBox()
         self.theme_combo.addItems(["System Default", "Light", "Dark"])
+
+        # load initial config
+        try:
+            cfg = load_config()
+            cur = cfg.get("theme", "System Default")
+            idx = self.theme_combo.findText(cur)
+            if idx >= 0:
+                self.theme_combo.setCurrentIndex(idx)
+        except Exception:
+            pass
+
         row.addWidget(self.theme_combo)
         v.addLayout(row)
 
@@ -575,6 +623,8 @@ class SettingsTab(QWidget):
             QMessageBox.critical(self, "Error", f"Could not update account: {e}")
 
 
+
+
 # -------------------- Server Status Tab --------------------
 class ServerStatusTab(QWidget):
     def __init__(self):
@@ -602,6 +652,8 @@ class ServerStatusTab(QWidget):
 
 # -------------------- Main Window --------------------
 class MainWindow(QWidget):
+
+
     def __init__(self, current_user):
         super().__init__()
         self.current_user = current_user
@@ -609,31 +661,58 @@ class MainWindow(QWidget):
 
         self.setWindowTitle("Server - Uploader")
         self.resize(960, 700)
-        
+
+        # Set global app icon if available
         try:
             if ICON_PATH.exists():
                 self.setWindowIcon(QIcon(str(ICON_PATH)))
         except Exception:
             pass
 
-        layout = QVBoxLayout()
-        self.tabs = QTabWidget()
-        self.tabs.tabBar().setExpanding(True)
+        # main vertical layout
+        main_layout = QVBoxLayout()
 
+        # --- top navigation buttons ---
+        nav_layout = QHBoxLayout()
+        self.upload_btn = QPushButton(TAB_UPLOAD)
+        self.files_btn = QPushButton(TAB_FILES)
+        self.requests_btn = QPushButton(TAB_REQUESTS)
+        self.settings_btn = QPushButton(TAB_SETTINGS)
+        self.status_btn = QPushButton(TAB_SERVER_STATUS)
+
+        for btn in (self.upload_btn, self.files_btn, self.requests_btn, self.settings_btn, self.status_btn):
+            btn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            nav_layout.addWidget(btn)
+
+        main_layout.addLayout(nav_layout)
+
+        # --- stacked pages ---
+        self.stack = QStackedLayout()
         self.upload_tab = UploadTab(self.get_current_user)
         self.files_tab = FilesTab(self.get_current_user)
         self.requests_tab = RequestsTab(self.get_current_user)
         self.settings_tab = SettingsTab(self.current_user, self)
         self.status_tab = ServerStatusTab()
 
-        self.tabs.addTab(self.upload_tab, "Upload")
-        self.tabs.addTab(self.files_tab, "Files")
-        self.tabs.addTab(self.requests_tab, "Requests")
-        self.tabs.addTab(self.settings_tab, "Settings")
-        self.tabs.addTab(self.status_tab, "Server Status")
+        self.stack.addWidget(self.upload_tab)    # index 0
+        self.stack.addWidget(self.files_tab)     # index 1
+        self.stack.addWidget(self.requests_tab)  # index 2
+        self.stack.addWidget(self.settings_tab)  # index 3
+        self.stack.addWidget(self.status_tab)    # index 4
 
-        layout.addWidget(self.tabs)
-        self.setLayout(layout)
+        # wrap stacked layout in a widget and add to layout
+        stack_container = QWidget()
+        stack_container.setLayout(self.stack)
+        main_layout.addWidget(stack_container)
+
+        self.setLayout(main_layout)
+
+        # connect buttons to stack switching
+        self.upload_btn.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        self.files_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        self.requests_btn.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+        self.settings_btn.clicked.connect(lambda: self.stack.setCurrentIndex(3))
+        self.status_btn.clicked.connect(lambda: self.stack.setCurrentIndex(4))
 
     def get_current_user(self):
         return self.current_user
@@ -642,6 +721,8 @@ class MainWindow(QWidget):
         # mark logout and quit the Qt event loop
         self.logged_out = True
         QApplication.quit()
+
+
 
 
 # -------------------- Session runner --------------------
@@ -698,5 +779,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
